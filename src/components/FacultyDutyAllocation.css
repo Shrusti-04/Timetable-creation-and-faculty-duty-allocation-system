@@ -1,0 +1,115 @@
+.duty-allocation-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.allocation-form {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.allocation-form h2 {
+  color: #000;
+  margin-bottom: 30px;
+  text-align: center;
+  font-size: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #000;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.form-group select,
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #000;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: #8b1818;
+}
+
+.allocate-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.allocate-btn:hover {
+  background-color: #45a049;
+}
+
+.allocation-results {
+  margin-top: 30px;
+}
+
+.session-allocation {
+  margin-bottom: 30px;
+}
+
+.session-allocation h4 {
+  color: #000;
+  margin-bottom: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background-color: white;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  color: #000;
+}
+
+th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  color: #000;
+}
+
+tr:hover {
+  background-color: #f5f5f5;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #000;
+}
+
+.error {
+  color: #d32f2f;
+  padding: 20px;
+  text-align: center;
+  background: #ffebee;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
