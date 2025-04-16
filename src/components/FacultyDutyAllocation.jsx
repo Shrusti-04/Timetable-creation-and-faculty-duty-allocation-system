@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import './FacultyDutyAllocation.css';
+import React, { useState, useEffect } from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import "./FacultyDutyAllocation.css";
 
 const FacultyDutyAllocation = () => {
-  const [examType, setExamType] = useState('ISA 1');
-  const [startDate, setStartDate] = useState('04-01-2025');
-  const [endDate, setEndDate] = useState('06-01-2025');
+  const [examType, setExamType] = useState("ISA1");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [facultyList, setFacultyList] = useState([]);
   const [classrooms, setClassrooms] = useState([]);
-  const [selectedExam, setSelectedExam] = useState('');
   const [allocations, setAllocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,130 +23,144 @@ const FacultyDutyAllocation = () => {
       setError(null);
 
       // Fetch faculty list
-      const facultyResponse = await fetch('http://localhost:3001/api/faculty');
+      const facultyResponse = await fetch("http://localhost:3001/api/faculty");
       if (!facultyResponse.ok) {
-        throw new Error('Failed to fetch faculty data');
+        throw new Error("Failed to fetch faculty data");
       }
       const facultyData = await facultyResponse.json();
 
       // Fetch classroom data
-      const classroomResponse = await fetch('http://localhost:3001/api/classrooms');
+      const classroomResponse = await fetch(
+        "http://localhost:3001/api/classrooms"
+      );
       if (!classroomResponse.ok) {
-        throw new Error('Failed to fetch classroom data');
+        throw new Error("Failed to fetch classroom data");
       }
       const classroomData = await classroomResponse.json();
 
       // Filter active classrooms (those with non-zero QP count)
-      const activeClassrooms = classroomData.filter(room => 
-        room.third_sem_qp_count > 0 || room.fifth_sem_qp_count > 0
+      const activeClassrooms = classroomData.filter(
+        (room) => room.third_sem_qp_count > 0 || room.fifth_sem_qp_count > 0
       );
 
       setFacultyList(facultyData);
       setClassrooms(activeClassrooms);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching data:', error);
-      setError('Failed to load data');
+      console.error("Error fetching data:", error);
+      setError("Failed to load data");
       setLoading(false);
     }
   };
 
-  const handleAllocation = async () => {
+  const handleAllocation = async (e) => {
+    if (e) e.preventDefault();
     try {
       setError(null);
 
-      if (!selectedExam || !startDate || !endDate) {
-        throw new Error('Please select exam type and dates');
+      if (!examType || !startDate || !endDate) {
+        throw new Error("Please select exam type and dates");
       }
 
       // Get dates between start and end date
       const dates = getDatesInRange(startDate, endDate);
-      
+
       // Create allocations for each date and classroom
       const newAllocations = [];
       let allocationIndex = 1;
 
-      dates.forEach(date => {
-        const formattedDate = date.toISOString().split('T')[0];
-        
+      dates.forEach((date) => {
+        const formattedDate = date.toISOString().split("T")[0];
+
         // For each classroom
-        classrooms.forEach(classroom => {
+        classrooms.forEach((classroom) => {
           // Shuffle faculty list for this classroom
-          const shuffledFaculty = [...facultyList].sort(() => Math.random() - 0.5);
-          
+          const shuffledFaculty = [...facultyList].sort(
+            () => Math.random() - 0.5
+          );
+
           // Morning session - 2 faculty
           const morningFaculty1 = shuffledFaculty[0];
           const morningFaculty2 = shuffledFaculty[1];
-          
+
           newAllocations.push({
             sno: allocationIndex++,
             name: morningFaculty1.name,
             date: formattedDate,
-            session: 'morning',
-            classroom: classroom.classroom
+            session: "morning",
+            classroom: classroom.classroom,
           });
-          
+
           newAllocations.push({
             sno: allocationIndex++,
             name: morningFaculty2.name,
             date: formattedDate,
-            session: 'morning',
-            classroom: classroom.classroom
+            session: "morning",
+            classroom: classroom.classroom,
           });
 
           // Afternoon session - 2 faculty
           const afternoonFaculty1 = shuffledFaculty[2];
           const afternoonFaculty2 = shuffledFaculty[3];
-          
+
           newAllocations.push({
             sno: allocationIndex++,
             name: afternoonFaculty1.name,
             date: formattedDate,
-            session: 'afternoon',
-            classroom: classroom.classroom
+            session: "afternoon",
+            classroom: classroom.classroom,
           });
-          
+
           newAllocations.push({
             sno: allocationIndex++,
             name: afternoonFaculty2.name,
             date: formattedDate,
-            session: 'afternoon',
-            classroom: classroom.classroom
+            session: "afternoon",
+            classroom: classroom.classroom,
           });
         });
       });
 
       // Save allocations to database
-      const response = await fetch('http://localhost:3001/api/duty-allocation/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          examType: selectedExam,
-          allocations: newAllocations
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:3001/api/duty-allocation/save",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            examType: examType,
+            allocations: newAllocations,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save duty allocations');
+        throw new Error(errorData.message || "Failed to save duty allocations");
       }
 
       setAllocations(newAllocations);
       generatePDF(newAllocations);
-      alert('Duty allocation completed successfully!');
+      alert("Duty allocation completed successfully!");
     } catch (error) {
-      console.error('Error in handleAllocation:', error);
+      console.error("Error in handleAllocation:", error);
       setError(error.message);
-      alert(error.message || 'Failed to allocate duties. Please try again.');
+      alert(error.message || "Failed to allocate duties. Please try again.");
     }
   };
 
   const getDatesInRange = (start, end) => {
     const dates = [];
+    // Make sure we have valid date objects
     let currentDate = new Date(start);
     const endDate = new Date(end);
+
+    // Ensure the dates are valid
+    if (isNaN(currentDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error("Invalid date format. Please use YYYY-MM-DD format.");
+    }
 
     while (currentDate <= endDate) {
       dates.push(new Date(currentDate));
@@ -159,22 +172,33 @@ const FacultyDutyAllocation = () => {
 
   const generatePDF = (allocations) => {
     const doc = new jsPDF();
-    
+
     // Title
     doc.setFontSize(16);
-    doc.text('FACULTY INVIGILATION DUTY SCHEDULE', 105, 20, { align: 'center' });
-    
+    doc.text("FACULTY INVIGILATION DUTY SCHEDULE", 105, 20, {
+      align: "center",
+    });
+
     // Create table headers
-    const headers = [['sno', 'name', 'date', 'session(afternoon/morning)', 'classrooms', 'sign']];
+    const headers = [
+      [
+        "sno",
+        "name",
+        "date",
+        "session(afternoon/morning)",
+        "classrooms",
+        "sign",
+      ],
+    ];
 
     // Create table rows
-    const rows = allocations.map(allocation => [
+    const rows = allocations.map((allocation) => [
       allocation.sno,
       allocation.name,
       formatDate(allocation.date),
       allocation.session,
       allocation.classroom,
-      ''
+      "",
     ]);
 
     // Generate the table
@@ -182,10 +206,10 @@ const FacultyDutyAllocation = () => {
       head: headers,
       body: rows,
       startY: 30,
-      theme: 'grid',
+      theme: "grid",
       styles: {
         fontSize: 10,
-        cellPadding: 3
+        cellPadding: 3,
       },
       columnStyles: {
         0: { cellWidth: 15 }, // sno
@@ -193,12 +217,12 @@ const FacultyDutyAllocation = () => {
         2: { cellWidth: 30 }, // date
         3: { cellWidth: 40 }, // session
         4: { cellWidth: 30 }, // classrooms
-        5: { cellWidth: 25 } // sign
-      }
+        5: { cellWidth: 25 }, // sign
+      },
     });
 
     // Save PDF
-    doc.save('faculty_duty_schedule.pdf');
+    doc.save("faculty_duty_schedule.pdf");
 
     // Clear allocations from database after PDF is generated
     clearAllocations();
@@ -206,52 +230,34 @@ const FacultyDutyAllocation = () => {
 
   const clearAllocations = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/duty-allocation/clear', {
-        method: 'DELETE'
-      });
+      const response = await fetch(
+        "http://localhost:3001/api/duty-allocation/clear",
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to clear allocations');
+        throw new Error("Failed to clear allocations");
       }
 
       // Clear the local state
       setAllocations([]);
     } catch (error) {
-      console.error('Error clearing allocations:', error);
+      console.error("Error clearing allocations:", error);
       // Don't show error to user since PDF was already generated
     }
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }).replace(/\//g, '-');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:3001/api/allocate-duties', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ examType, startDate, endDate }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to allocate duties');
-      }
-
-      alert('Duties allocated successfully!');
-    } catch (error) {
-      alert('Failed to allocate duties. Please try again.');
-      console.error('Error:', error);
-    }
+    return date
+      .toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+      .replace(/\//g, "-");
   };
 
   if (loading) return <div className="loading">Loading data...</div>;
@@ -260,60 +266,20 @@ const FacultyDutyAllocation = () => {
   return (
     <div className="duty-allocation-container">
       <h2>Faculty Duty Allocation</h2>
-      
+
       <div className="allocation-form">
-        <div className="form-group">
-          <label>Exam Type:</label>
-          <select 
-            value={selectedExam} 
-            onChange={(e) => setSelectedExam(e.target.value)}
-          >
-            <option value="">Select Exam</option>
-            <option value="ISA1">ISA 1</option>
-            <option value="ISA2">ISA 2</option>
-            <option value="ESA">ESA</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Start Date:</label>
-          <input 
-            type="date" 
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>End Date:</label>
-          <input 
-            type="date" 
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
-
-        <button 
-          onClick={handleAllocation} 
-          className="allocate-btn"
-          disabled={!selectedExam || !startDate || !endDate}
-        >
-          Allocate Duties
-        </button>
-      </div>
-
-      <div className="duty-allocation-form">
-        <h2>Faculty Duty Allocation</h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleAllocation}>
           <div className="form-group">
             <label>Exam Type:</label>
-            <select 
+            <select
               value={examType}
               onChange={(e) => setExamType(e.target.value)}
               className="form-control"
+              required
             >
-              <option value="ISA 1">ISA 1</option>
-              <option value="ISA 2">ISA 2</option>
+              <option value="">Select Exam</option>
+              <option value="ISA1">ISA 1</option>
+              <option value="ISA2">ISA 2</option>
               <option value="ESA">ESA</option>
             </select>
           </div>
@@ -321,26 +287,30 @@ const FacultyDutyAllocation = () => {
           <div className="form-group">
             <label>Start Date:</label>
             <input
-              type="text"
+              type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="form-control"
-              placeholder="DD-MM-YYYY"
+              required
             />
           </div>
 
           <div className="form-group">
             <label>End Date:</label>
             <input
-              type="text"
+              type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="form-control"
-              placeholder="DD-MM-YYYY"
+              required
             />
           </div>
 
-          <button type="submit" className="btn-allocate">
+          <button
+            type="submit"
+            className="allocate-btn"
+            disabled={!examType || !startDate || !endDate}
+          >
             Allocate Duties
           </button>
         </form>
